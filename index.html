@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UJIAN ONLINE SISWA</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- SDK Firebase CDN (v9 Compatibility Mode) -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+
+  <style>
+    body { user-select: none; -webkit-user-select: none; }
+    .rich-editor img, #display-teks-soal img, .opt-display img {
+      max-width: 100% !important; 
+      height: auto !important; 
+      max-height: 300px !important; 
+      border-radius: 0.375rem; 
+      margin: 10px 0 !important; 
+      display: block !important;
+    }
+    .anbk-header { background: linear-gradient(90deg, #1e3a8a 0%, #2563eb 100%); }
+    .anbk-card { border-top: 5px solid #2563eb; }
+
+    .soal-wrapper {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.5rem;
+      width: 100%;
+    }
+    .soal-number {
+      flex-shrink: 0;
+      min-width: 28px;
+      font-weight: 700;
+      font-size: 1rem;
+      color: #1e293b;
+      line-height: 1.6;
+      text-align: right;
+    }
+    .soal-content {
+      flex: 1 1 0%;
+      min-width: 0;
+      text-align: justify;
+      text-justify: inter-word;
+      word-break: break-word;
+      font-size: 1rem;
+      color: #1e293b;
+      font-weight: 500;
+      line-height: 1.6;
+    }
+    .soal-content * {
+      margin-top: 0 !important;
+      margin-left: 0 !important;
+      margin-right: 0 !important;
+      padding: 0 !important;
+      text-indent: 0 !important;
+      line-height: 1.6 !important;
+      text-align: justify !important;
+    }
+    .soal-content p { margin-bottom: 0.5rem !important; }
+    .soal-content p:last-child { margin-bottom: 0 !important; }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-800 font-sans min-h-screen">
+
+  <div id="toast" class="hidden fixed top-4 right-4 z-50 bg-red-600 text-white px-4 py-2.5 rounded-lg shadow-xl text-sm font-semibold"></div>
+
+  <!-- POPUP PERINGATAN KELUAR FULLSCREEN / KECURANGAN -->
+  <div id="modal-warning" class="hidden fixed inset-0 z-50 bg-slate-900/90 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl p-6 md:p-8 max-w-md w-full text-center space-y-4 shadow-2xl border border-red-200">
+      <div class="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+        </svg>
+      </div>
+      <h3 class="text-xl font-black text-slate-900 uppercase">Peringatan Pelanggaran!</h3>
+      <p class="text-sm text-slate-600">Anda terdeteksi keluar dari layar ujian atau membuka aplikasi/tab lain. Pelanggaran ini telah dicatat oleh sistem.</p>
+      <div class="bg-red-50 text-red-700 font-bold p-3 rounded-lg text-xs">
+        Pelanggaran Dicatat: <span id="violation-count">0</span> Kali
+      </div>
+      <button onclick="kembaliKeUjian()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl shadow-lg transition">KEMBALI KE UJIAN (FULLSCREEN)</button>
+    </div>
+  </div>
+
+  <!-- HALAMAN LOGIN SISWA -->
+  <div id="page-login" class="min-h-screen flex items-center justify-center p-4">
+    <div class="bg-white p-6 md:p-8 rounded-2xl shadow-xl w-full max-w-md border border-slate-200">
+      <div class="text-center mb-6">
+        <h1 class="text-2xl font-black text-blue-900 tracking-wider uppercase">UJIAN ONLINE SISWA</h1>
+        <p class="text-xs text-slate-500 font-medium mt-1">Sistem Ujian Sekolah & Evaluasi Terintegrasi</p>
+      </div>
+
+      <form id="form-login-siswa" onsubmit="handleLoginSiswa(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Kelas / Rombel</label>
+          <select id="siswa-kelas" onchange="updateSiswaDropdown()" class="w-full p-2.5 bg-slate-50 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" required>
+            <option value="">-- Pilih Kelas --</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Nama Siswa</label>
+          <select id="siswa-nama" class="w-full p-2.5 bg-slate-50 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" required>
+            <option value="">-- Pilih Nama --</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Kode Ujian (Token)</label>
+          <input type="text" id="siswa-token" placeholder="Token Ujian" class="w-full p-2.5 bg-slate-50 border rounded-lg uppercase font-mono font-bold tracking-widest focus:ring-2 focus:ring-blue-500 outline-none" required>
+        </div>
+        <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl shadow-lg transition">MASUK & MULAI UJIAN</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- HALAMAN KERJA UJIAN SISWA -->
+  <div id="page-siswa" class="hidden min-h-screen bg-slate-100 flex flex-col justify-between select-none">
+    <div class="anbk-header text-white px-6 py-3 shadow-md flex justify-between items-center sticky top-0 z-10">
+      <div class="flex items-center gap-3">
+        <div class="bg-white/10 p-2 rounded-lg font-black text-xs tracking-wider border border-white/20 uppercase">UJIAN ONLINE SISWA</div>
+        <div>
+          <h2 id="view-siswa-nama" class="font-bold text-sm md:text-base leading-tight">Nama Siswa</h2>
+          <p id="view-siswa-info" class="text-xs text-blue-200">UH | Mapel | Ganjil TP. 2025/2026</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-4">
+        <div class="bg-blue-950/80 border border-blue-400/30 px-4 py-1.5 rounded-xl text-right">
+          <p class="text-[9px] text-blue-300 uppercase font-bold tracking-widest">Sisa Waktu</p>
+          <p id="timer-display" class="font-mono text-lg font-black text-yellow-300">00:00</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="p-4 md:p-6 max-w-4xl mx-auto w-full flex-grow">
+      <div class="bg-white rounded-xl shadow-md border border-slate-200 anbk-card p-6 space-y-6">
+        <div class="flex justify-between items-center border-b pb-4">
+          <div class="flex items-center gap-2">
+            <span class="bg-blue-600 text-white font-black text-sm px-3.5 py-1.5 rounded-md shadow-sm">SOAL NO. <span id="soal-nomor-display">1</span></span>
+            <span id="display-hots-lots" class="text-xs font-extrabold px-2.5 py-1 rounded-md border"></span>
+          </div>
+          <span id="display-jenis-ujian" class="text-xs font-extrabold text-blue-700 bg-blue-50 border border-blue-200 px-3 py-1 rounded-md">UH</span>
+        </div>
+
+        <div class="soal-wrapper">
+          <div id="display-soal-num-prefix" class="soal-number">1.</div>
+          <div id="display-teks-soal" class="soal-content"></div>
+        </div>
+
+        <div class="space-y-3 pt-4 border-t" id="options-container"></div>
+      </div>
+    </div>
+
+    <div class="bg-white border-t border-slate-300 px-6 py-3 shadow-lg max-w-4xl mx-auto w-full flex justify-between items-center sticky bottom-0 rounded-t-xl">
+      <button id="btn-prev" onclick="navSoal(-1)" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-6 py-2.5 rounded-lg text-sm shadow transition">SOAL SEBELUMNYA</button>
+      <label class="flex items-center gap-2 bg-yellow-400 hover:bg-yellow-500 text-slate-900 font-bold px-4 py-2.5 rounded-lg text-sm cursor-pointer shadow transition">
+        <input type="checkbox" id="chk-ragu" onchange="toggleRagu()" class="w-4 h-4 accent-slate-900">
+        <span>RAGU - RAGU</span>
+      </label>
+      <button id="btn-next" onclick="navSoal(1)" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-6 py-2.5 rounded-lg text-sm shadow transition">SOAL BERIKUTNYA</button>
+      <button id="btn-submit" onclick="konfirmasiSelesai()" class="hidden bg-emerald-600 hover:bg-emerald-700 text-white font-black px-8 py-2.5 rounded-lg text-sm shadow transition">SELESAI UJIAN</button>
+    </div>
+  </div>
+
+  <script>
+    // -----------------------------------------------------------------
+    // KONFIGURASI FIREBASE
+    // -----------------------------------------------------------------
+    const firebaseConfig = {
+      apiKey: "AIzaSyBxQCgLQlLPkueDp0lpuLarGwWWLIpEwnM",
+      authDomain: "ujianonline-937d4.firebaseapp.com",
+      databaseURL: "https://ujianonline-937d4-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "ujianonline-937d4",
+      storageBucket: "ujianonline-937d4.firebasestorage.app",
+      messagingSenderId: "615101746896",
+      appId: "1:615101746896:web:7d0da7dd7106de4fabd8d5",
+      measurementId: "G-9DL8C937J8"
+    };
+    
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    let appData = {
+      token: 'EXAM88',
+      soal: [],
+      siswa: [],
+      config: {}
+    };
+
+    let stateUjianSiswa = {
+      currentSiswaKey: null,
+      currentSoalIdx: 0,
+      jawaban: {},
+      ragu: {},
+      timerInterval: null,
+      waktuSisa: 0,
+      isExamActive: false,
+      violations: 0
+    };
+
+    window.onload = function() {
+      // Prevent Context Menu & Shortcut umum pencarian/copy
+      document.addEventListener('contextmenu', e => e.preventDefault());
+      document.addEventListener('keydown', e => {
+        if (stateUjianSiswa.isExamActive) {
+          // Blokir Alt+Tab, F12, Ctrl+U, Ctrl+Shift+I, dll
+          if (e.key === 'F12' || (e.ctrlKey && (e.key === 'u' || e.key === 'U' || e.key === 'i' || e.key === 'I' || e.key === 'c' || e.key === 'C'))) {
+            e.preventDefault();
+          }
+        }
+      });
+
+      // Sinkronisasi Data Realtime dari Firebase
+      db.ref('token').on('value', snap => { appData.token = snap.val() || 'EXAM88'; });
+      db.ref('soal').on('value', snap => { appData.soal = snap.val() ? Object.values(snap.val()) : []; });
+      
+      db.ref('config').on('value', snap => { 
+        appData.config = snap.val() || {}; 
+        populateSiswaClasses();
+      });
+      
+      db.ref('siswa').on('value', snap => {
+        const data = snap.val();
+        appData.siswa = [];
+        if(data) {
+          Object.keys(data).forEach(key => {
+            appData.siswa.push({ key: key, ...data[key] });
+          });
+        }
+        populateSiswaClasses();
+      });
+    };
+
+    // -----------------------------------------------------------------
+    // PROTEKSI FULLSCREEN & KECEPATAN PINDAH TAB/WINDOW
+    // -----------------------------------------------------------------
+    function openFullscreen() {
+      const elem = document.documentElement;
+      if (elem.requestFullscreen) elem.requestFullscreen().catch(() => {});
+      else if (elem.webkitRequestFullscreen) elem.webkitRequestFullscreen();
+      else if (elem.msRequestFullscreen) elem.msRequestFullscreen();
+    }
+
+    function handleViolation() {
+      if (!stateUjianSiswa.isExamActive) return;
+
+      stateUjianSiswa.violations++;
+      document.getElementById('violation-count').innerText = stateUjianSiswa.violations;
+      document.getElementById('modal-warning').classList.remove('hidden');
+
+      // Update jumlah pelanggaran siswa ke Firebase secara realtime
+      if (stateUjianSiswa.currentSiswaKey) {
+        db.ref('siswa/' + stateUjianSiswa.currentSiswaKey).update({
+          pelanggaran: stateUjianSiswa.violations,
+          status: `Melanggar (${stateUjianSiswa.violations}x)`
+        });
+      }
+    }
+
+    function kembaliKeUjian() {
+      document.getElementById('modal-warning').classList.add('hidden');
+      openFullscreen();
+      if (stateUjianSiswa.currentSiswaKey) {
+        db.ref('siswa/' + stateUjianSiswa.currentSiswaKey).update({ status: 'Sedang Ujian' });
+      }
+    }
+
+    // Deteksi Keluar Fullscreen
+    document.addEventListener('fullscreenchange', () => {
+      if (stateUjianSiswa.isExamActive && !document.fullscreenElement) {
+        handleViolation();
+      }
+    });
+
+    // Deteksi Pindah Tab / Minimalisir Browser
+    document.addEventListener('visibilitychange', () => {
+      if (stateUjianSiswa.isExamActive && document.hidden) {
+        handleViolation();
+      }
+    });
+
+    // Deteksi Pindah Fokus Window (misal: Buka browser sebelah / aplikasi lain)
+    window.addEventListener('blur', () => {
+      if (stateUjianSiswa.isExamActive) {
+        handleViolation();
+      }
+    });
+
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      toast.innerText = msg;
+      toast.classList.remove('hidden');
+      setTimeout(() => toast.classList.add('hidden'), 3000);
+    }
+
+    function cleanWordFormatting(html) {
+      if (!html) return '';
+      let temp = document.createElement('div');
+      temp.innerHTML = html;
+      temp.querySelectorAll('[style*="mso-list"], [class*="MsoList"], o\\:p').forEach(el => el.remove());
+      temp.querySelectorAll('*').forEach(el => {
+        if (el.tagName.toLowerCase() !== 'img') {
+          el.removeAttribute('style');
+          el.removeAttribute('class');
+          el.removeAttribute('align');
+        }
+      });
+      return temp.innerHTML.trim();
+    }
+
+    function sanitizeOptionText(rawHtml) {
+      if (!rawHtml) return '';
+      let cleanedHtml = cleanWordFormatting(rawHtml);
+      let temp = document.createElement('div');
+      temp.innerHTML = cleanedHtml;
+      let textNodes = [];
+      let walk = document.createTreeWalker(temp, NodeFilter.SHOW_TEXT, null, false);
+      let n;
+      while(n = walk.nextNode()) textNodes.push(n);
+      if (textNodes.length > 0) {
+        textNodes[0].nodeValue = textNodes[0].nodeValue.replace(/^(\s*(\[[a-dA-D]\]|[a-dA-D][\.\)\-–]))\s*/gi, '');
+      }
+      return temp.innerHTML.trim();
+    }
+
+    function sanitizeSoalText(rawHtml) {
+      if (!rawHtml) return '';
+      let cleanedHtml = cleanWordFormatting(rawHtml);
+      let temp = document.createElement('div');
+      temp.innerHTML = cleanedHtml;
+      let textNodes = [];
+      let walk = document.createTreeWalker(temp, NodeFilter.SHOW_TEXT, null, false);
+      let n;
+      while(n = walk.nextNode()) textNodes.push(n);
+      if (textNodes.length > 0) {
+        textNodes[0].nodeValue = textNodes[0].nodeValue
+          .replace(/^(\s*(Soal\s*)?[0-9]+[\.\)\-–\:]+)\s*/gi, '')
+          .trim();
+      }
+      return temp.innerHTML.trim();
+    }
+
+    function detectHotsOrLots(htmlContent) {
+      const plainText = (htmlContent || '').replace(/<[^>]*>?/gm, '').toLowerCase();
+      const hasImage = /<img\b[^>]*>/i.test(htmlContent || '');
+      
+      const hotsKeywords = [
+        'analisis', 'menganalisis', 'bandingkan', 'membandingkan', 'evaluasi', 'mengevaluasi',
+        'mengapa', 'bagaimana', 'jelaskan', 'gambarkan', 'diagram', 'grafik', 'tabel', 
+        'stimulus', 'prediksi', 'kesimpulan', 'simpulan', 'hubungan', 'pengaruh', 'sebab', 'akibat', 'solusi'
+      ];
+
+      const isHots = hasImage || hotsKeywords.some(kw => plainText.includes(kw)) || plainText.length > 160;
+
+      const badge = document.getElementById('display-hots-lots');
+      if (isHots) {
+        badge.innerText = 'Kategori Soal: HOTS';
+        badge.className = 'text-xs font-extrabold px-2.5 py-1 rounded-md border border-purple-300 bg-purple-50 text-purple-700';
+      } else {
+        badge.innerText = 'Kategori Soal: LOTS';
+        badge.className = 'text-xs font-extrabold px-2.5 py-1 rounded-md border border-teal-300 bg-teal-50 text-teal-700';
+      }
+    }
+
+    function populateSiswaClasses() {
+      const selectKelas = document.getElementById('siswa-kelas');
+      if(!selectKelas) return;
+      
+      const valBefore = selectKelas.value;
+      selectKelas.innerHTML = '<option value="">-- Pilih Kelas --</option>';
+
+      let availableClasses = [...new Set(appData.siswa.map(s => s.kelas))];
+
+      if (appData.config && appData.config.kelasAktif) {
+        availableClasses = availableClasses.filter(c => c === appData.config.kelasAktif);
+      }
+
+      availableClasses.sort().forEach(c => { 
+        selectKelas.innerHTML += `<option value="${c}">${c}</option>`; 
+      });
+
+      if(valBefore && availableClasses.includes(valBefore)) {
+        selectKelas.value = valBefore;
+      }
+
+      updateSiswaDropdown();
+    }
+
+    function updateSiswaDropdown() {
+      const kls = document.getElementById('siswa-kelas').value;
+      const selectNama = document.getElementById('siswa-nama');
+      if(!selectNama) return;
+      
+      const valBefore = selectNama.value;
+      selectNama.innerHTML = '<option value="">-- Pilih Nama --</option>';
+      appData.siswa.filter(s => s.kelas === kls).forEach(s => {
+        selectNama.innerHTML += `<option value="${s.nama}">${s.nama}</option>`;
+      });
+      if(valBefore) selectNama.value = valBefore;
+    }
+
+    function handleLoginSiswa(e) {
+      e.preventDefault();
+      const nama = document.getElementById('siswa-nama').value;
+      const kelas = document.getElementById('siswa-kelas').value;
+      const token = document.getElementById('siswa-token').value.toUpperCase();
+
+      if (!nama || !kelas) return showToast("Lengkapi data login!");
+      if (token !== appData.token) return showToast("Token Ujian Salah!");
+      if (appData.soal.length === 0) return showToast("Belum ada soal tersedia!");
+
+      const sObj = appData.siswa.find(s => s.nama === nama && s.kelas === kelas);
+      if (sObj && sObj.mekerjakan) return alert("Anda sudah menyelesaikan ujian ini!");
+
+      stateUjianSiswa.currentSiswaKey = sObj ? sObj.key : null;
+      stateUjianSiswa.isExamActive = true;
+      stateUjianSiswa.violations = 0;
+
+      openFullscreen();
+
+      if(stateUjianSiswa.currentSiswaKey) {
+        db.ref('siswa/' + stateUjianSiswa.currentSiswaKey).update({ status: 'Sedang Ujian', pelanggaran: 0 });
+      }
+
+      document.getElementById('page-login').classList.add('hidden');
+      document.getElementById('page-siswa').classList.remove('hidden');
+
+      const jenisUjian = appData.config.jenis || 'UH';
+      const mapel = appData.config.mapel || 'Mapel';
+      const semester = appData.config.semester || 'Ganjil';
+      const tp = appData.config.tp || '2025/2026';
+
+      document.getElementById('view-siswa-nama').innerText = nama;
+      document.getElementById('view-siswa-info').innerText = `${jenisUjian} | ${mapel} | ${semester} TP. ${tp}`;
+      document.getElementById('display-jenis-ujian').innerText = jenisUjian;
+
+      stateUjianSiswa.waktuSisa = parseInt(appData.config.waktu || '60') * 60;
+      startTimer();
+      renderSoalSiswa(0);
+    }
+
+    function startTimer() {
+      stateUjianSiswa.timerInterval = setInterval(() => {
+        stateUjianSiswa.waktuSisa--;
+        const m = Math.floor(stateUjianSiswa.waktuSisa / 60);
+        const s = stateUjianSiswa.waktuSisa % 60;
+        document.getElementById('timer-display').innerText = 
+          `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+
+        if (stateUjianSiswa.waktuSisa <= 0) {
+          clearInterval(stateUjianSiswa.timerInterval);
+          submitUjian();
+        }
+      }, 1000);
+    }
+
+    function renderSoalSiswa(index) {
+      stateUjianSiswa.currentSoalIdx = index;
+      const soal = appData.soal[index];
+      const total = appData.soal.length;
+
+      document.getElementById('soal-nomor-display').innerText = soal.nomor;
+      document.getElementById('display-soal-num-prefix').innerText = soal.nomor + '.';
+
+      const sanitizedText = sanitizeSoalText(soal.teks);
+      document.getElementById('display-teks-soal').innerHTML = sanitizedText;
+      
+      detectHotsOrLots(sanitizedText);
+
+      document.getElementById('chk-ragu').checked = !!stateUjianSiswa.ragu[index];
+
+      const optionsContainer = document.getElementById('options-container');
+      optionsContainer.innerHTML = '';
+      
+      const keys = Object.keys(soal.opts).sort();
+      keys.forEach(opt => {
+        const isSelected = stateUjianSiswa.jawaban[index] === opt;
+        let cleanContent = sanitizeOptionText(soal.opts[opt]);
+
+        optionsContainer.innerHTML += `
+          <button onclick="pilihJawaban('${opt}')" class="w-full text-left p-3.5 rounded-xl border-2 flex items-start gap-3.5 transition ${isSelected ? 'border-blue-600 bg-blue-50/70 shadow-sm' : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'}">
+            <span class="w-8 h-8 flex-shrink-0 flex items-center justify-center rounded-lg font-black text-sm transition ${isSelected ? 'bg-blue-600 text-white shadow' : 'bg-slate-100 text-slate-700 border border-slate-300'}">${opt}</span>
+            <div class="text-sm font-semibold opt-display flex-grow text-slate-800 leading-relaxed pt-1" style="text-align: justify; text-justify: inter-word;">${cleanContent}</div>
+          </button>
+        `;
+      });
+
+      document.getElementById('btn-prev').style.visibility = index === 0 ? 'hidden' : 'visible';
+      if (index === total - 1) {
+        document.getElementById('btn-next').classList.add('hidden');
+        document.getElementById('btn-submit').classList.remove('hidden');
+      } else {
+        document.getElementById('btn-next').classList.remove('hidden');
+        document.getElementById('btn-submit').classList.add('hidden');
+      }
+    }
+
+    function pilihJawaban(opt) {
+      stateUjianSiswa.jawaban[stateUjianSiswa.currentSoalIdx] = opt;
+      renderSoalSiswa(stateUjianSiswa.currentSoalIdx);
+    }
+
+    function toggleRagu() {
+      const idx = stateUjianSiswa.currentSoalIdx;
+      stateUjianSiswa.ragu[idx] = document.getElementById('chk-ragu').checked;
+    }
+
+    function navSoal(step) {
+      const target = stateUjianSiswa.currentSoalIdx + step;
+      if (target >= 0 && target < appData.soal.length) {
+        renderSoalSiswa(target);
+      }
+    }
+
+    function konfirmasiSelesai() {
+      if (confirm("Apakah Anda yakin ingin menyelesaikan ujian ini?")) submitUjian();
+    }
+
+    function submitUjian() {
+      stateUjianSiswa.isExamActive = false; // Nonaktifkan pembatasan fullscreen
+      clearInterval(stateUjianSiswa.timerInterval);
+      
+      let benar = 0;
+      appData.soal.forEach((s, i) => {
+        if (stateUjianSiswa.jawaban[i] === s.kunci) benar++;
+      });
+
+      const nilaiAkhir = Math.round((benar / appData.soal.length) * 100);
+
+      if(stateUjianSiswa.currentSiswaKey) {
+        db.ref('siswa/' + stateUjianSiswa.currentSiswaKey).update({
+          nilai: nilaiAkhir,
+          status: 'Selesai',
+          mekerjakan: true
+        });
+      }
+
+      alert(`Ujian Berhasil Diselesaikan!\nNilai Ujian Anda: ${nilaiAkhir}`);
+      if (document.exitFullscreen) document.exitFullscreen().catch(()=>{});
+
+      document.getElementById('page-siswa').classList.add('hidden');
+      document.getElementById('page-login').classList.remove('hidden');
+    }
+  </script>
+</body>
+</html>
