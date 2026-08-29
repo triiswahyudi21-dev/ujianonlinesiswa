@@ -58,7 +58,7 @@
       line-height: 1.6 !important;
       text-align: justify !important;
     }
-    .soal-content p { margin-bottom: 0.5rem !important; }
+    .soal-content p { margin-bottom: 0.25rem !important; }
     .soal-content p:last-child { margin-bottom: 0 !important; }
   </style>
 </head>
@@ -66,20 +66,15 @@
 
   <div id="toast" class="hidden fixed top-4 right-4 z-50 bg-red-600 text-white px-4 py-2.5 rounded-lg shadow-xl text-sm font-semibold"></div>
 
-  <!-- POPUP PERINGATAN KELUAR FULLSCREEN / KECURANGAN -->
-  <div id="modal-warning" class="hidden fixed inset-0 z-50 bg-slate-900/90 backdrop-blur-sm flex items-center justify-center p-4">
-    <div class="bg-white rounded-2xl p-6 md:p-8 max-w-md w-full text-center space-y-4 shadow-2xl border border-red-200">
-      <div class="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
-        </svg>
+  <!-- MODAL KONFIRMASI LOGOUT / KELUAR -->
+  <div id="modal-logout" class="hidden fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl p-6 max-w-sm w-full text-center space-y-4 shadow-2xl border border-slate-200">
+      <h3 class="text-lg font-bold text-slate-900">Konfirmasi Keluar Ujian</h3>
+      <p class="text-xs text-slate-600">Apakah Anda yakin ingin keluar dari layar ujian?</p>
+      <div class="flex gap-2">
+        <button onclick="prosesLogout(true)" class="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-2 rounded-xl text-xs transition">Ya, Keluar</button>
+        <button onclick="prosesLogout(false)" class="flex-1 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold py-2 rounded-xl text-xs transition">Batal</button>
       </div>
-      <h3 class="text-xl font-black text-slate-900 uppercase">Peringatan Pelanggaran!</h3>
-      <p class="text-sm text-slate-600">Anda terdeteksi keluar dari layar ujian atau membuka aplikasi/tab lain. Pelanggaran ini telah dicatat oleh sistem.</p>
-      <div class="bg-red-50 text-red-700 font-bold p-3 rounded-lg text-xs">
-        Pelanggaran Dicatat: <span id="violation-count">0</span> Kali
-      </div>
-      <button onclick="kembaliKeUjian()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl shadow-lg transition">KEMBALI KE UJIAN (FULLSCREEN)</button>
     </div>
   </div>
 
@@ -128,36 +123,72 @@
           <p class="text-[9px] text-blue-300 uppercase font-bold tracking-widest">Sisa Waktu</p>
           <p id="timer-display" class="font-mono text-lg font-black text-yellow-300">00:00</p>
         </div>
+        <button onclick="mintaLogout()" class="bg-red-500 hover:bg-red-600 text-white font-bold text-xs px-3 py-2 rounded-lg shadow transition">LOGOUT</button>
       </div>
     </div>
 
-    <div class="p-4 md:p-6 max-w-4xl mx-auto w-full flex-grow">
-      <div class="bg-white rounded-xl shadow-md border border-slate-200 anbk-card p-6 space-y-6">
-        <div class="flex justify-between items-center border-b pb-4">
-          <div class="flex items-center gap-2">
-            <span class="bg-blue-600 text-white font-black text-sm px-3.5 py-1.5 rounded-md shadow-sm">SOAL NO. <span id="soal-nomor-display">1</span></span>
-            <span id="display-hots-lots" class="text-xs font-extrabold px-2.5 py-1 rounded-md border"></span>
+    <!-- MAIN CONTENT: GRID LAYOUT UNTUK SOAL (KIRI) DAN NAVIGASI (KANAN) -->
+    <div class="p-4 md:p-6 max-w-7xl mx-auto w-full flex-grow">
+      <div class="grid grid-cols-1 lg:grid-cols-4 gap-5 items-start">
+        
+        <!-- KOLOM KIRI: AREA SOAL UJIAN -->
+        <div class="lg:col-span-3 bg-white rounded-xl shadow-md border border-slate-200 anbk-card p-5 md:p-6 space-y-4">
+          <div class="flex justify-between items-center border-b pb-3">
+            <div class="flex items-center gap-2">
+              <span class="bg-blue-600 text-white font-black text-sm px-3.5 py-1.5 rounded-md shadow-sm">SOAL NO. <span id="soal-nomor-display">1</span></span>
+              <span id="display-hots-lots" class="text-xs font-extrabold px-2.5 py-1 rounded-md border"></span>
+            </div>
+            <span id="display-jenis-ujian" class="text-xs font-extrabold text-blue-700 bg-blue-50 border border-blue-200 px-3 py-1 rounded-md">UH</span>
           </div>
-          <span id="display-jenis-ujian" class="text-xs font-extrabold text-blue-700 bg-blue-50 border border-blue-200 px-3 py-1 rounded-md">UH</span>
+
+          <div class="soal-wrapper">
+            <div id="display-soal-num-prefix" class="soal-number">1.</div>
+            <div id="display-teks-soal" class="soal-content"></div>
+          </div>
+
+          <div class="space-y-2.5 pt-3 border-t border-slate-200" id="options-container"></div>
         </div>
 
-        <div class="soal-wrapper">
-          <div id="display-soal-num-prefix" class="soal-number">1.</div>
-          <div id="display-teks-soal" class="soal-content"></div>
+        <!-- KOLOM KANAN: PAPAN NAVIGASI NOMOR SOAL -->
+        <div class="lg:col-span-1 bg-white rounded-xl shadow-md border border-slate-200 p-4 space-y-3 sticky top-20">
+          <div class="border-b pb-2 flex justify-between items-center">
+            <h3 class="text-xs font-black text-slate-700 uppercase tracking-wider">Navigasi Soal</h3>
+            <span id="nav-counter" class="text-[11px] font-bold bg-blue-50 text-blue-700 px-2 py-0.5 rounded border border-blue-200">0/0</span>
+          </div>
+
+          <!-- Keterangan Status Warna -->
+          <div class="grid grid-cols-3 gap-1 text-[10px] font-semibold text-slate-600 border-b pb-2">
+            <div class="flex items-center gap-1">
+              <span class="w-2.5 h-2.5 rounded bg-emerald-600 inline-block"></span> Dijawab
+            </div>
+            <div class="flex items-center gap-1">
+              <span class="w-2.5 h-2.5 rounded bg-amber-400 inline-block"></span> Ragu
+            </div>
+            <div class="flex items-center gap-1">
+              <span class="w-2.5 h-2.5 rounded bg-slate-100 border border-slate-300 inline-block"></span> Belum
+            </div>
+          </div>
+
+          <!-- Container Grid Nomor Soal -->
+          <div id="nav-soal-grid" class="grid grid-cols-5 gap-2 max-h-[380px] overflow-y-auto pr-1">
+            <!-- Tombol nomor soal di-render dinamis dari JavaScript -->
+          </div>
         </div>
 
-        <div class="space-y-3 pt-4 border-t" id="options-container"></div>
       </div>
     </div>
 
-    <div class="bg-white border-t border-slate-300 px-6 py-3 shadow-lg max-w-4xl mx-auto w-full flex justify-between items-center sticky bottom-0 rounded-t-xl">
-      <button id="btn-prev" onclick="navSoal(-1)" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-6 py-2.5 rounded-lg text-sm shadow transition">SOAL SEBELUMNYA</button>
-      <label class="flex items-center gap-2 bg-yellow-400 hover:bg-yellow-500 text-slate-900 font-bold px-4 py-2.5 rounded-lg text-sm cursor-pointer shadow transition">
-        <input type="checkbox" id="chk-ragu" onchange="toggleRagu()" class="w-4 h-4 accent-slate-900">
-        <span>RAGU - RAGU</span>
+    <!-- BOTTOM BAR: BUTTONS NAVIGASI -->
+    <div class="bg-white border-t border-slate-300 px-6 py-3 shadow-lg max-w-7xl mx-auto w-full flex justify-between items-center sticky bottom-0 rounded-t-xl z-10">
+      <button id="btn-prev" onclick="navSoal(-1)" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-5 py-2 rounded-lg text-sm shadow transition">SOAL SEBELUMNYA</button>
+      
+      <label class="flex items-center gap-2 bg-yellow-400 hover:bg-yellow-500 text-slate-900 font-semibold px-3 py-1.5 rounded-lg text-xs cursor-pointer shadow transition border border-yellow-500/30 select-none">
+        <input type="checkbox" id="chk-ragu" onchange="toggleRagu()" class="w-3.5 h-3.5 accent-slate-900 rounded cursor-pointer">
+        <span class="tracking-wide">RAGU - RAGU</span>
       </label>
-      <button id="btn-next" onclick="navSoal(1)" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-6 py-2.5 rounded-lg text-sm shadow transition">SOAL BERIKUTNYA</button>
-      <button id="btn-submit" onclick="konfirmasiSelesai()" class="hidden bg-emerald-600 hover:bg-emerald-700 text-white font-black px-8 py-2.5 rounded-lg text-sm shadow transition">SELESAI UJIAN</button>
+
+      <button id="btn-next" onclick="navSoal(1)" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-5 py-2 rounded-lg text-sm shadow transition">SOAL BERIKUTNYA</button>
+      <button id="btn-submit" onclick="konfirmasiSelesai()" class="hidden bg-emerald-600 hover:bg-emerald-700 text-white font-black px-7 py-2 rounded-lg text-sm shadow transition">SELESAI UJIAN</button>
     </div>
   </div>
 
@@ -193,17 +224,17 @@
       ragu: {},
       timerInterval: null,
       waktuSisa: 0,
-      isExamActive: false,
-      violations: 0
+      isExamActive: false
     };
 
     window.onload = function() {
-      // Prevent Context Menu & Shortcut umum pencarian/copy
+      // Prevent Context Menu
       document.addEventListener('contextmenu', e => e.preventDefault());
+
+      // Blokir tombol ESC / Pintasan Keyboard tertentu saat ujian aktif
       document.addEventListener('keydown', e => {
         if (stateUjianSiswa.isExamActive) {
-          // Blokir Alt+Tab, F12, Ctrl+U, Ctrl+Shift+I, dll
-          if (e.key === 'F12' || (e.ctrlKey && (e.key === 'u' || e.key === 'U' || e.key === 'i' || e.key === 'I' || e.key === 'c' || e.key === 'C'))) {
+          if (e.key === 'Escape' || e.key === 'F12' || (e.ctrlKey && (e.key === 'u' || e.key === 'U' || e.key === 'i' || e.key === 'I' || e.key === 'c' || e.key === 'C'))) {
             e.preventDefault();
           }
         }
@@ -230,9 +261,7 @@
       });
     };
 
-    // -----------------------------------------------------------------
-    // PROTEKSI FULLSCREEN & KECEPATAN PINDAH TAB/WINDOW
-    // -----------------------------------------------------------------
+    // FULLSCREEN HANDLER
     function openFullscreen() {
       const elem = document.documentElement;
       if (elem.requestFullscreen) elem.requestFullscreen().catch(() => {});
@@ -240,50 +269,32 @@
       else if (elem.msRequestFullscreen) elem.msRequestFullscreen();
     }
 
-    function handleViolation() {
-      if (!stateUjianSiswa.isExamActive) return;
-
-      stateUjianSiswa.violations++;
-      document.getElementById('violation-count').innerText = stateUjianSiswa.violations;
-      document.getElementById('modal-warning').classList.remove('hidden');
-
-      // Update jumlah pelanggaran siswa ke Firebase secara realtime
-      if (stateUjianSiswa.currentSiswaKey) {
-        db.ref('siswa/' + stateUjianSiswa.currentSiswaKey).update({
-          pelanggaran: stateUjianSiswa.violations,
-          status: `Melanggar (${stateUjianSiswa.violations}x)`
-        });
-      }
+    function exitFullscreenSafely() {
+      if (document.exitFullscreen) document.exitFullscreen().catch(()=>{});
+      else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+      else if (document.msExitFullscreen) document.msExitFullscreen();
     }
 
-    function kembaliKeUjian() {
-      document.getElementById('modal-warning').classList.add('hidden');
-      openFullscreen();
-      if (stateUjianSiswa.currentSiswaKey) {
-        db.ref('siswa/' + stateUjianSiswa.currentSiswaKey).update({ status: 'Sedang Ujian' });
-      }
+    // FUNGSI LOGOUT DENGAN KONFIRMASI
+    function mintaLogout() {
+      document.getElementById('modal-logout').classList.remove('hidden');
     }
 
-    // Deteksi Keluar Fullscreen
-    document.addEventListener('fullscreenchange', () => {
-      if (stateUjianSiswa.isExamActive && !document.fullscreenElement) {
-        handleViolation();
-      }
-    });
+    function prosesLogout(setuju) {
+      document.getElementById('modal-logout').classList.add('hidden');
+      if (setuju) {
+        stateUjianSiswa.isExamActive = false;
+        clearInterval(stateUjianSiswa.timerInterval);
 
-    // Deteksi Pindah Tab / Minimalisir Browser
-    document.addEventListener('visibilitychange', () => {
-      if (stateUjianSiswa.isExamActive && document.hidden) {
-        handleViolation();
-      }
-    });
+        if (stateUjianSiswa.currentSiswaKey) {
+          db.ref('siswa/' + stateUjianSiswa.currentSiswaKey).update({ status: 'Selesai / Keluar' });
+        }
 
-    // Deteksi Pindah Fokus Window (misal: Buka browser sebelah / aplikasi lain)
-    window.addEventListener('blur', () => {
-      if (stateUjianSiswa.isExamActive) {
-        handleViolation();
+        exitFullscreenSafely();
+        document.getElementById('page-siswa').classList.add('hidden');
+        document.getElementById('page-login').classList.remove('hidden');
       }
-    });
+    }
 
     function showToast(msg) {
       const toast = document.getElementById('toast');
@@ -413,12 +424,11 @@
 
       stateUjianSiswa.currentSiswaKey = sObj ? sObj.key : null;
       stateUjianSiswa.isExamActive = true;
-      stateUjianSiswa.violations = 0;
 
       openFullscreen();
 
       if(stateUjianSiswa.currentSiswaKey) {
-        db.ref('siswa/' + stateUjianSiswa.currentSiswaKey).update({ status: 'Sedang Ujian', pelanggaran: 0 });
+        db.ref('siswa/' + stateUjianSiswa.currentSiswaKey).update({ status: 'Sedang Ujian' });
       }
 
       document.getElementById('page-login').classList.add('hidden');
@@ -453,13 +463,53 @@
       }, 1000);
     }
 
+    // FUNGSI UNTUK MERENDER PAPAN NAVIGASI NOMOR SOAL DI SEBELAH KANAN
+    function renderNavGrid() {
+      const grid = document.getElementById('nav-soal-grid');
+      const counter = document.getElementById('nav-counter');
+      if (!grid) return;
+
+      grid.innerHTML = '';
+      let dijawabCount = 0;
+
+      appData.soal.forEach((s, idx) => {
+        const isCurrent = idx === stateUjianSiswa.currentSoalIdx;
+        const isAnswered = stateUjianSiswa.jawaban[idx] !== undefined && stateUjianSiswa.jawaban[idx] !== '';
+        const isRagu = !!stateUjianSiswa.ragu[idx];
+
+        if (isAnswered) dijawabCount++;
+
+        let btnClass = "bg-slate-100 text-slate-700 hover:bg-slate-200 border-slate-300";
+
+        if (isRagu) {
+          btnClass = "bg-amber-400 text-slate-900 border-amber-500 font-bold shadow-sm";
+        } else if (isAnswered) {
+          btnClass = "bg-emerald-600 text-white border-emerald-700 font-bold shadow-sm";
+        }
+
+        if (isCurrent) {
+          btnClass += " ring-2 ring-blue-600 ring-offset-1";
+        }
+
+        grid.innerHTML += `
+          <button onclick="renderSoalSiswa(${idx})" class="h-9 w-full rounded-lg border flex items-center justify-center text-xs font-bold transition transform active:scale-95 ${btnClass}">
+            ${s.nomor || (idx + 1)}
+          </button>
+        `;
+      });
+
+      if (counter) {
+        counter.innerText = `${dijawabCount}/${appData.soal.length}`;
+      }
+    }
+
     function renderSoalSiswa(index) {
       stateUjianSiswa.currentSoalIdx = index;
       const soal = appData.soal[index];
       const total = appData.soal.length;
 
-      document.getElementById('soal-nomor-display').innerText = soal.nomor;
-      document.getElementById('display-soal-num-prefix').innerText = soal.nomor + '.';
+      document.getElementById('soal-nomor-display').innerText = soal.nomor || (index + 1);
+      document.getElementById('display-soal-num-prefix').innerText = (soal.nomor || (index + 1)) + '.';
 
       const sanitizedText = sanitizeSoalText(soal.teks);
       document.getElementById('display-teks-soal').innerHTML = sanitizedText;
@@ -477,9 +527,9 @@
         let cleanContent = sanitizeOptionText(soal.opts[opt]);
 
         optionsContainer.innerHTML += `
-          <button onclick="pilihJawaban('${opt}')" class="w-full text-left p-3.5 rounded-xl border-2 flex items-start gap-3.5 transition ${isSelected ? 'border-blue-600 bg-blue-50/70 shadow-sm' : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'}">
-            <span class="w-8 h-8 flex-shrink-0 flex items-center justify-center rounded-lg font-black text-sm transition ${isSelected ? 'bg-blue-600 text-white shadow' : 'bg-slate-100 text-slate-700 border border-slate-300'}">${opt}</span>
-            <div class="text-sm font-semibold opt-display flex-grow text-slate-800 leading-relaxed pt-1" style="text-align: justify; text-justify: inter-word;">${cleanContent}</div>
+          <button onclick="pilihJawaban('${opt}')" class="w-full text-left px-3 py-2.5 rounded-xl border flex items-center gap-3 transition ${isSelected ? 'border-blue-600 bg-blue-50/80 shadow-sm ring-1 ring-blue-500' : 'border-slate-200 bg-slate-50 hover:border-slate-300 hover:bg-slate-100'}">
+            <span class="w-7 h-7 flex-shrink-0 flex items-center justify-center rounded-lg font-bold text-xs transition ${isSelected ? 'bg-blue-600 text-white shadow' : 'bg-white text-slate-700 border border-slate-300'}">${opt}</span>
+            <div class="text-sm font-medium opt-display flex-grow text-slate-800 leading-snug" style="text-align: justify; text-justify: inter-word;">${cleanContent}</div>
           </button>
         `;
       });
@@ -492,6 +542,8 @@
         document.getElementById('btn-next').classList.remove('hidden');
         document.getElementById('btn-submit').classList.add('hidden');
       }
+
+      renderNavGrid();
     }
 
     function pilihJawaban(opt) {
@@ -502,6 +554,7 @@
     function toggleRagu() {
       const idx = stateUjianSiswa.currentSoalIdx;
       stateUjianSiswa.ragu[idx] = document.getElementById('chk-ragu').checked;
+      renderNavGrid();
     }
 
     function navSoal(step) {
@@ -516,7 +569,7 @@
     }
 
     function submitUjian() {
-      stateUjianSiswa.isExamActive = false; // Nonaktifkan pembatasan fullscreen
+      stateUjianSiswa.isExamActive = false;
       clearInterval(stateUjianSiswa.timerInterval);
       
       let benar = 0;
@@ -535,7 +588,7 @@
       }
 
       alert(`Ujian Berhasil Diselesaikan!\nNilai Ujian Anda: ${nilaiAkhir}`);
-      if (document.exitFullscreen) document.exitFullscreen().catch(()=>{});
+      exitFullscreenSafely();
 
       document.getElementById('page-siswa').classList.add('hidden');
       document.getElementById('page-login').classList.remove('hidden');
