@@ -284,10 +284,15 @@
       document.getElementById('modal-logout').classList.add('hidden');
       if (setuju) {
         stateUjianSiswa.isExamActive = false;
+        stateUjianSiswa.jawaban = {};
+        stateUjianSiswa.ragu = {};
         clearInterval(stateUjianSiswa.timerInterval);
 
         if (stateUjianSiswa.currentSiswaKey) {
-          db.ref('siswa/' + stateUjianSiswa.currentSiswaKey).update({ status: 'Selesai / Keluar' });
+          db.ref('siswa/' + stateUjianSiswa.currentSiswaKey).update({ 
+            status: 'Belum',
+            mekerjakan: false 
+          });
         }
 
         exitFullscreenSafely();
@@ -420,15 +425,22 @@
       if (appData.soal.length === 0) return showToast("Belum ada soal tersedia!");
 
       const sObj = appData.siswa.find(s => s.nama === nama && s.kelas === kelas);
-      if (sObj && sObj.mekerjakan) return alert("Anda sudah menyelesaikan ujian ini!");
+      if (sObj && sObj.status === 'Selesai') return alert("Anda sudah menyelesaikan ujian ini!");
 
       stateUjianSiswa.currentSiswaKey = sObj ? sObj.key : null;
       stateUjianSiswa.isExamActive = true;
+      
+      // RESET TOTAL JAWABAN DAN STATUS RAGU MENJADI KOSONG UNTUK SISWA
+      stateUjianSiswa.jawaban = {};
+      stateUjianSiswa.ragu = {};
 
       openFullscreen();
 
       if(stateUjianSiswa.currentSiswaKey) {
-        db.ref('siswa/' + stateUjianSiswa.currentSiswaKey).update({ status: 'Sedang Ujian' });
+        db.ref('siswa/' + stateUjianSiswa.currentSiswaKey).update({ 
+          status: 'Berlangsung',
+          mekerjakan: true 
+        });
       }
 
       document.getElementById('page-login').classList.add('hidden');
@@ -583,7 +595,7 @@
         db.ref('siswa/' + stateUjianSiswa.currentSiswaKey).update({
           nilai: nilaiAkhir,
           status: 'Selesai',
-          mekerjakan: true
+          mekerjakan: false
         });
       }
 
