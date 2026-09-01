@@ -532,19 +532,27 @@
 
       const optionsContainer = document.getElementById('options-container');
       optionsContainer.innerHTML = '';
-      
-      const keys = Object.keys(soal.opts).sort();
-      keys.forEach(opt => {
-        const isSelected = stateUjianSiswa.jawaban[index] === opt;
-        let cleanContent = sanitizeOptionText(soal.opts[opt]);
 
-        optionsContainer.innerHTML += `
-          <button onclick="pilihJawaban('${opt}')" class="w-full text-left px-3 py-2.5 rounded-xl border flex items-center gap-3 transition ${isSelected ? 'border-blue-600 bg-blue-50/80 shadow-sm ring-1 ring-blue-500' : 'border-slate-200 bg-slate-50 hover:border-slate-300 hover:bg-slate-100'}">
-            <span class="w-7 h-7 flex-shrink-0 flex items-center justify-center rounded-lg font-bold text-xs transition ${isSelected ? 'bg-blue-600 text-white shadow' : 'bg-white text-slate-700 border border-slate-300'}">${opt}</span>
-            <div class="text-sm font-medium opt-display flex-grow text-slate-800 leading-snug" style="text-align: justify; text-justify: inter-word;">${cleanContent}</div>
-          </button>
-        `;
-      });
+      // PERBAIKAN: Penanganan aman jika opts / opsi undefined atau null
+      const optsData = (soal && (soal.opts || soal.opsi)) ? (soal.opts || soal.opsi) : null;
+
+      if (!optsData) {
+        optionsContainer.innerHTML = '<div class="text-sm text-red-500 italic p-2 border border-red-200 rounded-lg bg-red-50">Opsi jawaban tidak ditemukan pada database.</div>';
+      } else {
+        const keys = Object.keys(optsData).sort();
+
+        keys.forEach(opt => {
+          const isSelected = stateUjianSiswa.jawaban[index] === opt;
+          let cleanContent = sanitizeOptionText(optsData[opt]);
+
+          optionsContainer.innerHTML += `
+            <button onclick="pilihJawaban('${opt}')" class="w-full text-left px-3 py-2.5 rounded-xl border flex items-center gap-3 transition ${isSelected ? 'border-blue-600 bg-blue-50/80 shadow-sm ring-1 ring-blue-500' : 'border-slate-200 bg-slate-50 hover:border-slate-300 hover:bg-slate-100'}">
+              <span class="w-7 h-7 flex-shrink-0 flex items-center justify-center rounded-lg font-bold text-xs transition ${isSelected ? 'bg-blue-600 text-white shadow' : 'bg-white text-slate-700 border border-slate-300'}">${opt}</span>
+              <div class="text-sm font-medium opt-display flex-grow text-slate-800 leading-snug" style="text-align: justify; text-justify: inter-word;">${cleanContent}</div>
+            </button>
+          `;
+        });
+      }
 
       document.getElementById('btn-prev').style.visibility = index === 0 ? 'hidden' : 'visible';
       if (index === total - 1) {
