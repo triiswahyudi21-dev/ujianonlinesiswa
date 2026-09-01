@@ -12,13 +12,16 @@
 
   <style>
     body { user-select: none; -webkit-user-select: none; }
-    .rich-editor img, #display-teks-soal img, .opt-display img {
+    .rich-editor img, #display-teks-soal img, .opt-display img, .soal-content img, div img {
       max-width: 100% !important; 
       height: auto !important; 
-      max-height: 300px !important; 
+      max-height: 400px !important; 
       border-radius: 0.375rem; 
       margin: 10px 0 !important; 
       display: block !important;
+      visibility: visible !important;
+      opacity: 1 !important;
+      object-fit: contain;
     }
     .anbk-header { background: linear-gradient(90deg, #1e3a8a 0%, #2563eb 100%); }
     .anbk-card { border-top: 5px solid #2563eb; }
@@ -56,7 +59,6 @@
       padding: 0 !important;
       text-indent: 0 !important;
       line-height: 1.6 !important;
-      text-align: justify !important;
     }
     .soal-content p { margin-bottom: 0.25rem !important; }
     .soal-content p:last-child { margin-bottom: 0 !important; }
@@ -115,7 +117,7 @@
         <div class="bg-white/10 p-2 rounded-lg font-black text-xs tracking-wider border border-white/20 uppercase">UJIAN ONLINE SISWA</div>
         <div>
           <h2 id="view-siswa-nama" class="font-bold text-sm md:text-base leading-tight">Nama Siswa</h2>
-          <p id="view-siswa-info" class="text-xs text-blue-200">UH | Mapel | Ganjil TP. 2025/2026</p>
+          <p id="view-siswa-info" class="text-xs text-blue-200">UH | Mapel Kelas -- | Ganjil TP. 2025/2026</p>
         </div>
       </div>
       <div class="flex items-center gap-4">
@@ -170,9 +172,7 @@
           </div>
 
           <!-- Container Grid Nomor Soal -->
-          <div id="nav-soal-grid" class="grid grid-cols-5 gap-2 max-h-[380px] overflow-y-auto pr-1">
-            <!-- Tombol nomor soal di-render dinamis dari JavaScript -->
-          </div>
+          <div id="nav-soal-grid" class="grid grid-cols-5 gap-2 max-h-[380px] overflow-y-auto pr-1"></div>
         </div>
 
       </div>
@@ -261,7 +261,24 @@
       });
     };
 
-    // FULLSCREEN HANDLER
+    function getSoalAktif() {
+      if (!appData.soal || appData.soal.length === 0) return [];
+      
+      const kelasAktif = appData.config ? (appData.config.kelasAktif || '') : '';
+      if (!kelasAktif) return appData.soal;
+
+      const matchTingkat = kelasAktif.match(/\d+/);
+      const tingkat = matchTingkat ? matchTingkat[0] : kelasAktif;
+
+      const filtered = appData.soal.filter(s => {
+        if (!s.kelas) return true;
+        const sKelas = String(s.kelas).trim();
+        return sKelas === kelasAktif || sKelas === tingkat || sKelas.startsWith(tingkat);
+      });
+
+      return filtered.length > 0 ? filtered : appData.soal;
+    }
+
     function openFullscreen() {
       const elem = document.documentElement;
       if (elem.requestFullscreen) elem.requestFullscreen().catch(() => {});
@@ -275,7 +292,6 @@
       else if (document.msExitFullscreen) document.msExitFullscreen();
     }
 
-    // FUNGSI LOGOUT DENGAN KONFIRMASI
     function mintaLogout() {
       document.getElementById('modal-logout').classList.remove('hidden');
     }
@@ -308,49 +324,135 @@
       setTimeout(() => toast.classList.add('hidden'), 3000);
     }
 
-    function cleanWordFormatting(html) {
-      if (!html) return '';
+    function decodeHTMLEntities(text) {
+      if (!text) return '';
+      let str = String(text);
+      let txt = document.createElement('textarea');
+      txt.innerHTML = str;
+      str = txt.value;
+      if (str.includes('&lt;') || str.includes('&gt;')) {
+        txt.innerHTML = str;
+        str = txt.value;
+      }
+      return str;
+    }
+
+    function fixGoogleDriveUrl(url) {
+      if (!url || typeof url !== 'string') return url;
+      if (url.includes('drive.google.com')) {
+        const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/) || url.match(/id=([a-zA-Z0-9_-]+)/);
+        if (match && match[1]) {
+          return `https://lh3.googleusercontent.com/d/${match[1]}`;
+        }
+      }
+      return url;
+    }
+
+    function processContentHTML(rawHtml) {
+      if (!rawHtml) return '';
+      let text = String(rawHtml);
+
+      text = decodeHTMLEntities(text);
+      text = text.replace(/!\[(.*?)\]\((.*?)\)/gi, (m, alt, url) => `<img src="${fixGoogleDriveUrl(url)}" alt="${alt}">`);
+      text = text.replace(/\[img\](.*?)\[\/img\]/gi, (m, url) => `<img src="${fixGoogleDriveUrl(url)}">`);
+
+      const imgRegex = /(https?:\/\/[^\s<"']+\.(?:png|jpg|jpeg|gif|webp|svg)(?:\?[^\s<"']*)?|https?:\/\/firebasestorage\.googleapis\.com\/[^\s<"']+|data:image\/[a-zA-Z]+;base64,[^\s<"']+)/gi;
+
       let temp = document.createElement('div');
-      temp.innerHTML = html;
+      temp.innerHTML = text;
+
       temp.querySelectorAll('[style*="mso-list"], [class*="MsoList"], o\\:p').forEach(el => el.remove());
+
       temp.querySelectorAll('*').forEach(el => {
-        if (el.tagName.toLowerCase() !== 'img') {
+        const tagName = el.tagName.toLowerCase();
+        if (tagName !== 'img') {
           el.removeAttribute('style');
           el.removeAttribute('class');
           el.removeAttribute('align');
+        } else {
+          let src = el.getAttribute('src');
+          if (src) el.setAttribute('src', fixGoogleDriveUrl(src));
+          el.setAttribute('referrerpolicy', 'no-referrer');
+          el.style.maxWidth = '100%';
+          el.style.height = 'auto';
+          el.style.display = 'block';
+          el.style.margin = '10px 0';
         }
       });
+
+      let walk = document.createTreeWalker(temp, NodeFilter.SHOW_TEXT, null, false);
+      let textNodes = [];
+      let n;
+      while (n = walk.nextNode()) textNodes.push(n);
+
+      textNodes.forEach(node => {
+        if (node.parentNode && node.parentNode.tagName.toLowerCase() !== 'script' && imgRegex.test(node.nodeValue)) {
+          let span = document.createElement('span');
+          span.innerHTML = node.nodeValue.replace(imgRegex, (url) => {
+            return `<img src="${fixGoogleDriveUrl(url)}" referrerpolicy="no-referrer" style="max-width:100%; height:auto; display:block; margin:10px 0;">`;
+          });
+          node.parentNode.replaceChild(span, node);
+        }
+      });
+
       return temp.innerHTML.trim();
+    }
+
+    function getExtraImagesHtml(obj, currentHtml) {
+      if (!obj || typeof obj !== 'object') return '';
+      let extraHtml = '';
+      let imageKeys = ['gambar', 'image', 'foto', 'img', 'urlgambar', 'url_gambar', 'file', 'media', 'src', 'url', 'picture', 'photo', 'filegambar'];
+      let urls = [];
+
+      Object.keys(obj).forEach(key => {
+        let val = obj[key];
+        if (typeof val === 'string' && val.trim().length > 5) {
+          val = val.trim();
+          let fixedUrl = fixGoogleDriveUrl(val);
+
+          let isImageKey = imageKeys.some(k => key.toLowerCase().includes(k));
+          let isImageUrl = /^data:image\//i.test(val) || 
+                           /^(https?:\/\/|\/|\.\/).*\.(jpg|jpeg|png|gif|webp|svg)(\?.*)?$/i.test(val) || 
+                           /firebasestorage\.googleapis\.com/i.test(val) ||
+                           /drive\.google\.com/i.test(val);
+
+          if ((isImageKey || isImageUrl) && !currentHtml.includes(fixedUrl) && !urls.includes(fixedUrl)) {
+            urls.push(fixedUrl);
+          }
+        }
+      });
+
+      urls.forEach(url => {
+        extraHtml += `<div class="mt-3"><img src="${url}" alt="Gambar" referrerpolicy="no-referrer" class="rounded-lg max-h-[380px] w-auto"></div>`;
+      });
+
+      return extraHtml;
     }
 
     function sanitizeOptionText(rawHtml) {
       if (!rawHtml) return '';
-      let cleanedHtml = cleanWordFormatting(rawHtml);
+      let cleanedHtml = processContentHTML(rawHtml);
       let temp = document.createElement('div');
       temp.innerHTML = cleanedHtml;
-      let textNodes = [];
+
       let walk = document.createTreeWalker(temp, NodeFilter.SHOW_TEXT, null, false);
-      let n;
-      while(n = walk.nextNode()) textNodes.push(n);
-      if (textNodes.length > 0) {
-        textNodes[0].nodeValue = textNodes[0].nodeValue.replace(/^(\s*(\[[a-dA-D]\]|[a-dA-D][\.\)\-–]))\s*/gi, '');
+      let firstText = walk.nextNode();
+      if (firstText) {
+        firstText.nodeValue = firstText.nodeValue.replace(/^(\s*(\[[a-dA-D]\]|[a-dA-D][\.\)\-–]))\s*/gi, '');
       }
       return temp.innerHTML.trim();
     }
 
     function sanitizeSoalText(rawHtml) {
       if (!rawHtml) return '';
-      let cleanedHtml = cleanWordFormatting(rawHtml);
+      let cleanedHtml = processContentHTML(rawHtml);
       let temp = document.createElement('div');
       temp.innerHTML = cleanedHtml;
-      let textNodes = [];
+
       let walk = document.createTreeWalker(temp, NodeFilter.SHOW_TEXT, null, false);
-      let n;
-      while(n = walk.nextNode()) textNodes.push(n);
-      if (textNodes.length > 0) {
-        textNodes[0].nodeValue = textNodes[0].nodeValue
-          .replace(/^(\s*(Soal\s*)?[0-9]+[\.\)\-–\:]+)\s*/gi, '')
-          .trim();
+      let firstText = walk.nextNode();
+      if (firstText) {
+        firstText.nodeValue = firstText.nodeValue.replace(/^(\s*(Soal\s*)?[0-9]+[\.\)\-–\:]+)\s*/gi, '').trim();
       }
       return temp.innerHTML.trim();
     }
@@ -419,10 +521,11 @@
       const nama = document.getElementById('siswa-nama').value;
       const kelas = document.getElementById('siswa-kelas').value;
       const token = document.getElementById('siswa-token').value.toUpperCase();
+      const soalAktif = getSoalAktif();
 
       if (!nama || !kelas) return showToast("Lengkapi data login!");
       if (token !== appData.token) return showToast("Token Ujian Salah!");
-      if (appData.soal.length === 0) return showToast("Belum ada soal tersedia!");
+      if (soalAktif.length === 0) return showToast("Belum ada soal tersedia untuk kelas ini!");
 
       const sObj = appData.siswa.find(s => s.nama === nama && s.kelas === kelas);
       if (sObj && sObj.status === 'Selesai') return alert("Anda sudah menyelesaikan ujian ini!");
@@ -430,7 +533,6 @@
       stateUjianSiswa.currentSiswaKey = sObj ? sObj.key : null;
       stateUjianSiswa.isExamActive = true;
       
-      // RESET TOTAL JAWABAN DAN STATUS RAGU MENJADI KOSONG UNTUK SISWA
       stateUjianSiswa.jawaban = {};
       stateUjianSiswa.ragu = {};
 
@@ -452,7 +554,7 @@
       const tp = appData.config.tp || '2025/2026';
 
       document.getElementById('view-siswa-nama').innerText = nama;
-      document.getElementById('view-siswa-info').innerText = `${jenisUjian} | ${mapel} | ${semester} TP. ${tp}`;
+      document.getElementById('view-siswa-info').innerText = `${jenisUjian} | ${mapel} Kelas ${kelas} | ${semester} TP. ${tp}`;
       document.getElementById('display-jenis-ujian').innerText = jenisUjian;
 
       stateUjianSiswa.waktuSisa = parseInt(appData.config.waktu || '60') * 60;
@@ -475,7 +577,6 @@
       }, 1000);
     }
 
-    // FUNGSI UNTUK MERENDER PAPAN NAVIGASI NOMOR SOAL DI SEBELAH KANAN
     function renderNavGrid() {
       const grid = document.getElementById('nav-soal-grid');
       const counter = document.getElementById('nav-counter');
@@ -483,8 +584,9 @@
 
       grid.innerHTML = '';
       let dijawabCount = 0;
+      const soalAktif = getSoalAktif();
 
-      appData.soal.forEach((s, idx) => {
+      soalAktif.forEach((s, idx) => {
         const isCurrent = idx === stateUjianSiswa.currentSoalIdx;
         const isAnswered = stateUjianSiswa.jawaban[idx] !== undefined && stateUjianSiswa.jawaban[idx] !== '';
         const isRagu = !!stateUjianSiswa.ragu[idx];
@@ -511,21 +613,27 @@
       });
 
       if (counter) {
-        counter.innerText = `${dijawabCount}/${appData.soal.length}`;
+        counter.innerText = `${dijawabCount}/${soalAktif.length}`;
       }
     }
 
     function renderSoalSiswa(index) {
       stateUjianSiswa.currentSoalIdx = index;
-      const soal = appData.soal[index];
-      const total = appData.soal.length;
+      const soalAktif = getSoalAktif();
+      const soal = soalAktif[index];
+      const total = soalAktif.length;
+
+      if (!soal) return;
 
       document.getElementById('soal-nomor-display').innerText = soal.nomor || (index + 1);
       document.getElementById('display-soal-num-prefix').innerText = (soal.nomor || (index + 1)) + '.';
 
-      const sanitizedText = sanitizeSoalText(soal.teks);
+      let rawSoalText = soal.teks || soal.text || soal.soal || soal.pertanyaan || '';
+      let sanitizedText = sanitizeSoalText(rawSoalText);
+
+      sanitizedText += getExtraImagesHtml(soal, sanitizedText);
+
       document.getElementById('display-teks-soal').innerHTML = sanitizedText;
-      
       detectHotsOrLots(sanitizedText);
 
       document.getElementById('chk-ragu').checked = !!stateUjianSiswa.ragu[index];
@@ -533,8 +641,7 @@
       const optionsContainer = document.getElementById('options-container');
       optionsContainer.innerHTML = '';
 
-      // PERBAIKAN: Penanganan aman jika opts / opsi undefined atau null
-      const optsData = (soal && (soal.opts || soal.opsi)) ? (soal.opts || soal.opsi) : null;
+      const optsData = (soal && (soal.opts || soal.opsi || soal.options || soal.pilihan)) ? (soal.opts || soal.opsi || soal.options || soal.pilihan) : null;
 
       if (!optsData) {
         optionsContainer.innerHTML = '<div class="text-sm text-red-500 italic p-2 border border-red-200 rounded-lg bg-red-50">Opsi jawaban tidak ditemukan pada database.</div>';
@@ -543,7 +650,16 @@
 
         keys.forEach(opt => {
           const isSelected = stateUjianSiswa.jawaban[index] === opt;
-          let cleanContent = sanitizeOptionText(optsData[opt]);
+          let rawOpt = optsData[opt];
+          let cleanContent = '';
+
+          if (typeof rawOpt === 'object' && rawOpt !== null) {
+            let optText = rawOpt.teks || rawOpt.text || rawOpt.opsi || rawOpt.pilihan || rawOpt.isi || '';
+            cleanContent = sanitizeOptionText(optText);
+            cleanContent += getExtraImagesHtml(rawOpt, cleanContent);
+          } else {
+            cleanContent = sanitizeOptionText(String(rawOpt));
+          }
 
           optionsContainer.innerHTML += `
             <button onclick="pilihJawaban('${opt}')" class="w-full text-left px-3 py-2.5 rounded-xl border flex items-center gap-3 transition ${isSelected ? 'border-blue-600 bg-blue-50/80 shadow-sm ring-1 ring-blue-500' : 'border-slate-200 bg-slate-50 hover:border-slate-300 hover:bg-slate-100'}">
@@ -579,7 +695,8 @@
 
     function navSoal(step) {
       const target = stateUjianSiswa.currentSoalIdx + step;
-      if (target >= 0 && target < appData.soal.length) {
+      const soalAktif = getSoalAktif();
+      if (target >= 0 && target < soalAktif.length) {
         renderSoalSiswa(target);
       }
     }
@@ -593,11 +710,14 @@
       clearInterval(stateUjianSiswa.timerInterval);
       
       let benar = 0;
-      appData.soal.forEach((s, i) => {
+      const soalAktif = getSoalAktif();
+
+      soalAktif.forEach((s, i) => {
         if (stateUjianSiswa.jawaban[i] === s.kunci) benar++;
       });
 
-      const nilaiAkhir = Math.round((benar / appData.soal.length) * 100);
+      const totalSoal = soalAktif.length || 1;
+      const nilaiAkhir = Math.round((benar / totalSoal) * 100);
 
       if(stateUjianSiswa.currentSiswaKey) {
         db.ref('siswa/' + stateUjianSiswa.currentSiswaKey).update({
