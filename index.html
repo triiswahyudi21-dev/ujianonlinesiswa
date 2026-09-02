@@ -361,7 +361,10 @@
       let temp = document.createElement('div');
       temp.innerHTML = text;
 
-      temp.querySelectorAll('[style*="mso-list"], [class*="MsoList"], o\\:p').forEach(el => el.remove());
+      // Pertahankan isi elemen Word (seperti o:p) tanpa menghapus konten di dalamnya
+      temp.querySelectorAll('o\\:p').forEach(el => {
+        el.outerHTML = el.innerHTML;
+      });
 
       temp.querySelectorAll('*').forEach(el => {
         const tagName = el.tagName.toLowerCase();
@@ -429,6 +432,7 @@
       return extraHtml;
     }
 
+    // Menghapus awalan huruf opsi (seperti "A.", "[A]") tanpa memotong isi kalimat jawaban
     function sanitizeOptionText(rawHtml) {
       if (!rawHtml) return '';
       let cleanedHtml = processContentHTML(rawHtml);
@@ -438,7 +442,7 @@
       let walk = document.createTreeWalker(temp, NodeFilter.SHOW_TEXT, null, false);
       let firstText = walk.nextNode();
       if (firstText) {
-        firstText.nodeValue = firstText.nodeValue.replace(/^(\s*(\[[a-dA-D]\]|[a-dA-D][\.\)\-–]))\s*/gi, '');
+        firstText.nodeValue = firstText.nodeValue.replace(/^(\s*(\[[a-dA-D]\]|[a-dA-D][\.\)\-–:]))\s*/g, '');
       }
       return temp.innerHTML.trim();
     }
@@ -664,7 +668,7 @@
           optionsContainer.innerHTML += `
             <button onclick="pilihJawaban('${opt}')" class="w-full text-left px-3 py-2.5 rounded-xl border flex items-center gap-3 transition ${isSelected ? 'border-blue-600 bg-blue-50/80 shadow-sm ring-1 ring-blue-500' : 'border-slate-200 bg-slate-50 hover:border-slate-300 hover:bg-slate-100'}">
               <span class="w-7 h-7 flex-shrink-0 flex items-center justify-center rounded-lg font-bold text-xs transition ${isSelected ? 'bg-blue-600 text-white shadow' : 'bg-white text-slate-700 border border-slate-300'}">${opt}</span>
-              <div class="text-sm font-medium opt-display flex-grow text-slate-800 leading-snug" style="text-align: justify; text-justify: inter-word;">${cleanContent}</div>
+              <div class="text-sm font-medium opt-display flex-grow text-slate-800 leading-snug break-words" style="text-align: justify; text-justify: inter-word;">${cleanContent}</div>
             </button>
           `;
         });
