@@ -6,7 +6,6 @@
   <title>UJIAN ONLINE SISWA</title>
   <script src="https://cdn.tailwindcss.com"></script>
   
-  <!-- SDK Firebase CDN (v9 Compatibility Mode) -->
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 
@@ -86,19 +85,6 @@
 
   <div id="toast" class="hidden fixed top-4 right-4 z-50 bg-red-600 text-white px-4 py-2.5 rounded-lg shadow-xl text-sm font-semibold"></div>
 
-  <!-- MODAL KONFIRMASI LOGOUT / KELUAR -->
-  <div id="modal-logout" class="hidden fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4">
-    <div class="bg-white rounded-2xl p-6 max-w-sm w-full text-center space-y-4 shadow-2xl border border-slate-200">
-      <h3 class="text-lg font-bold text-slate-900">Konfirmasi Keluar Ujian</h3>
-      <p class="text-xs text-slate-600">Apakah Anda yakin ingin keluar dari layar ujian?</p>
-      <div class="flex gap-2">
-        <button onclick="prosesLogout(true)" class="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-2 rounded-xl text-xs transition">Ya, Keluar</button>
-        <button onclick="prosesLogout(false)" class="flex-1 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold py-2 rounded-xl text-xs transition">Batal</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- HALAMAN LOGIN SISWA -->
   <div id="page-login" class="min-h-screen flex items-center justify-center p-4">
     <div class="bg-white p-6 md:p-8 rounded-2xl shadow-xl w-full max-w-md border border-slate-200">
       <div class="text-center mb-6">
@@ -128,7 +114,6 @@
     </div>
   </div>
 
-  <!-- HALAMAN KERJA UJIAN SISWA -->
   <div id="page-siswa" class="hidden min-h-screen bg-slate-100 flex flex-col justify-between select-none">
     <div class="anbk-header text-white px-6 py-3 shadow-md flex justify-between items-center sticky top-0 z-10">
       <div class="flex items-center gap-3">
@@ -143,15 +128,12 @@
           <p class="text-[9px] text-blue-300 uppercase font-bold tracking-widest">Sisa Waktu</p>
           <p id="timer-display" class="font-mono text-lg font-black text-yellow-300">00:00</p>
         </div>
-        <button onclick="mintaLogout()" class="bg-red-500 hover:bg-red-600 text-white font-bold text-xs px-3 py-2 rounded-lg shadow transition">LOGOUT</button>
       </div>
     </div>
 
-    <!-- MAIN CONTENT: GRID LAYOUT UNTUK SOAL (KIRI & KANAN) DAN NAVIGASI -->
     <div class="p-4 md:p-6 max-w-7xl mx-auto w-full flex-grow">
       <div class="grid grid-cols-1 lg:grid-cols-4 gap-5 items-start">
         
-        <!-- KOLOM KIRI: AREA SOAL UJIAN (SPLIT 2 KOLOM INTERNAL) -->
         <div class="lg:col-span-3 bg-white rounded-xl shadow-md border border-slate-200 anbk-card p-5 md:p-6 space-y-4">
           <div class="flex justify-between items-center border-b pb-3">
             <div class="flex items-center gap-2">
@@ -161,37 +143,31 @@
             <span id="display-jenis-ujian" class="text-xs font-extrabold text-blue-700 bg-blue-50 border border-blue-200 px-3 py-1 rounded-md">UH</span>
           </div>
 
-          <!-- GRID SPLIT: KIRI (STIMULUS TEKS JUSTIFY) & KANAN (PERTANYAAN & OPSI) -->
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
             
-            <!-- SUB-KOLOM KIRI: TEKS ATAU GAMBAR BERBENTUK PANJANG (RATA KIRI-KANAN / JUSTIFY) -->
             <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 max-h-[520px] overflow-y-auto space-y-2">
               <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block border-b pb-1">Teks / Gambar Lampiran Soal</span>
               <div id="display-teks-soal" class="soal-content text-justify"></div>
             </div>
 
-            <!-- SUB-KOLOM KANAN: PERTANYAAN & OPSI JAWABAN -->
             <div class="space-y-4 max-h-[520px] overflow-y-auto pr-1">
               <div class="soal-wrapper">
                 <div id="display-soal-num-prefix" class="soal-number">1.</div>
                 <div id="display-pertanyaan-soal" class="soal-content"></div>
               </div>
 
-              <!-- OPSI JAWABAN DENGAN BULATAN KECIL -->
               <div class="space-y-2.5 pt-3 border-t border-slate-200" id="options-container"></div>
             </div>
 
           </div>
         </div>
 
-        <!-- KOLOM KANAN: PAPAN NAVIGASI NOMOR SOAL -->
         <div class="lg:col-span-1 bg-white rounded-xl shadow-md border border-slate-200 p-3 space-y-2.5 sticky top-20">
           <div class="border-b pb-2 flex justify-between items-center">
             <h3 class="text-xs font-black text-slate-700 uppercase tracking-wider">Navigasi Soal</h3>
             <span id="nav-counter" class="text-[10px] font-bold bg-blue-50 text-blue-700 px-2 py-0.5 rounded border border-blue-200">0/0</span>
           </div>
 
-          <!-- Keterangan Status Warna -->
           <div class="grid grid-cols-3 gap-1 text-[9px] font-semibold text-slate-600 border-b pb-2">
             <div class="flex items-center gap-1">
               <span class="w-2 h-2 rounded bg-emerald-600 inline-block"></span> Dijawab
@@ -204,14 +180,12 @@
             </div>
           </div>
 
-          <!-- Container Grid Nomor Soal -->
           <div id="nav-soal-grid" class="grid grid-cols-5 gap-1.5 max-h-[350px] overflow-y-auto pr-1"></div>
         </div>
 
       </div>
     </div>
 
-    <!-- BOTTOM BAR: BUTTONS NAVIGASI -->
     <div class="bg-white border-t border-slate-300 px-6 py-3 shadow-lg max-w-7xl mx-auto w-full flex justify-between items-center sticky bottom-0 rounded-t-xl z-10">
       <button id="btn-prev" onclick="navSoal(-1)" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-5 py-2 rounded-lg text-sm shadow transition">SOAL SEBELUMNYA</button>
       
@@ -325,31 +299,6 @@
       else if (document.msExitFullscreen) document.msExitFullscreen();
     }
 
-    function mintaLogout() {
-      document.getElementById('modal-logout').classList.remove('hidden');
-    }
-
-    function prosesLogout(setuju) {
-      document.getElementById('modal-logout').classList.add('hidden');
-      if (setuju) {
-        stateUjianSiswa.isExamActive = false;
-        stateUjianSiswa.jawaban = {};
-        stateUjianSiswa.ragu = {};
-        clearInterval(stateUjianSiswa.timerInterval);
-
-        if (stateUjianSiswa.currentSiswaKey) {
-          db.ref('siswa/' + stateUjianSiswa.currentSiswaKey).update({ 
-            status: 'Belum',
-            mekerjakan: false 
-          });
-        }
-
-        exitFullscreenSafely();
-        document.getElementById('page-siswa').classList.add('hidden');
-        document.getElementById('page-login').classList.remove('hidden');
-      }
-    }
-
     function showToast(msg) {
       const toast = document.getElementById('toast');
       toast.innerText = msg;
@@ -363,7 +312,7 @@
       let txt = document.createElement('textarea');
       txt.innerHTML = str;
       str = txt.value;
-      if (str.includes('&lt;') || str.includes('&gt;')) {
+      if (str.includes('<') || str.includes('>')) {
         txt.innerHTML = str;
         str = txt.value;
       }
