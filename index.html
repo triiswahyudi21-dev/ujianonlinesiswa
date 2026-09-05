@@ -103,7 +103,7 @@
   <div id="modal-confirm-logout" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
     <div class="bg-white p-6 rounded-2xl shadow-2xl max-w-sm w-full mx-4 border border-slate-200 text-center">
       <h3 class="text-lg font-bold text-slate-800 mb-2">Konfirmasi Keluar</h3>
-      <p class="text-sm text-slate-600 mb-6">Apakah Anda yakin ingin keluar dari mode ujian?</p>
+      <p class="text-sm text-slate-600 mb-6">Apakah Anda yakin ingin keluar dari mode ujian ANBK?</p>
       <div class="flex gap-3 justify-center">
         <button onclick="prosesKeluarSiswa(true)" class="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 rounded-xl shadow transition">Ya, Keluar</button>
         <button onclick="prosesKeluarSiswa(false)" class="flex-1 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold py-2.5 rounded-xl transition">Batal</button>
@@ -111,7 +111,7 @@
     </div>
   </div>
 
-  <!-- HALAMAN LOGIN SISWA -->
+  <!-- HALAMAN LOGIN SISWA MANDIRI (TANPA PILIH MAPEL) -->
   <div id="page-login" class="min-h-screen flex items-center justify-center p-4">
     <div class="bg-white p-6 md:p-8 rounded-2xl shadow-xl w-full max-w-md border border-slate-200">
       <div class="text-center mb-6">
@@ -166,7 +166,7 @@
     </div>
 
     <div class="flex-grow flex overflow-hidden">
-      <!-- AREA UTAMA SOAL & OPSI JAWABAN -->
+      <!-- AREA UTAMA SOAL & OPSI JAWABAN (SINGLE COLUMN) -->
       <div class="flex-1 flex flex-col overflow-y-auto bg-white p-6 md:p-8">
         <div class="flex justify-between items-center border-b pb-3 mb-6 shrink-0">
           <div class="flex items-center gap-3">
@@ -175,15 +175,19 @@
           <span id="display-jenis-ujian" class="text-xs font-extrabold text-blue-700 bg-blue-50 border border-blue-200 px-3 py-1 rounded-md">UH</span>
         </div>
 
+        <!-- CONTAINER PERTANYAAN DAN OPSI -->
         <div class="flex-grow overflow-y-auto pr-2 space-y-6">
+          <!-- WACANA / TEKS / PERTANYAAN SOAL -->
           <div class="soal-wrapper bg-slate-50 p-5 rounded-xl border border-slate-200 shadow-sm">
             <div id="display-soal-num-prefix" class="soal-number">1.</div>
             <div id="display-teks-soal" class="soal-content"></div>
           </div>
 
+          <!-- OPSI JAWABAN -->
           <div class="space-y-3" id="options-container"></div>
         </div>
 
+        <!-- TOMBOL NAVIGASI BAWAH -->
         <div class="mt-6 border-t pt-4 flex justify-between items-center shrink-0">
           <button id="btn-prev" onclick="navSoal(-1)" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-6 py-2.5 rounded-lg text-sm shadow transition">SOAL SEBELUMNYA</button>
           
@@ -197,7 +201,7 @@
         </div>
       </div>
 
-      <!-- SIDEBAR NAVIGASI NOMOR -->
+      <!-- SIDEBAR NAVIGASI NOMOR (RIGHT) -->
       <div class="w-72 anbk-sidebar p-4 flex flex-col shrink-0 overflow-y-auto">
         <h3 class="font-bold text-slate-800 text-sm border-b border-slate-300 pb-2 mb-3 uppercase tracking-wider">Navigasi Soal</h3>
         
@@ -215,6 +219,7 @@
   </div>
 
   <script>
+    // Konfigurasi Firebase
     const firebaseConfig = {
       apiKey: "AIzaSyBxQCgLQlLPkueDp0lpuLarGwWWLIpEwnM",
       authDomain: "ujianonline-937d4.firebaseapp.com",
@@ -264,6 +269,7 @@
       else if (document.webkitExitFullscreen) document.webkitExitFullscreen().catch(() => {});
     }
 
+    // Mencegah Tombol Keluar / Refresh saat Ujian
     window.addEventListener('keydown', function(e) {
       if (!stateUjianSiswa.isExamActive) return;
       if (e.key === 'Escape' || e.key === 'F11' || (e.altKey && e.key === 'Tab') || (e.ctrlKey && (e.key === 'w' || e.key === 'r'))) {
@@ -276,6 +282,7 @@
       if (stateUjianSiswa.isExamActive) e.preventDefault();
     });
 
+    // MEMUAT KELAS & SISWA SECARA OTOMATIS BERDASARKAN RUANG GURU YANG AKTIF
     function muatDaftarSiswaOtomatis() {
       const selectKelas = document.getElementById('siswa-kelas');
       const selectNama = document.getElementById('siswa-nama');
@@ -321,6 +328,7 @@
       });
     }
 
+    // UPDATE DROPDOWN NAMA SISWA BERDASARKAN KELAS YAANG DIPILIH
     function updateSiswaDropdown() {
       const selectedKelas = document.getElementById('siswa-kelas').value;
       const selectNama = document.getElementById('siswa-nama');
@@ -339,6 +347,7 @@
       selectNama.innerHTML = html;
     }
 
+    // LOGIC LOGIN & OTOMATIS TERHUBUNG MAPEL GURU
     function handleLoginSiswa(e) {
       e.preventDefault();
       const keySiswa = document.getElementById('siswa-nama').value;
@@ -367,7 +376,7 @@
 
         if (!sData) return alert("Data siswa tidak ditemukan di ruang ujian guru!");
 
-        // BLOKIR LOGIN JIKA STATUS SUDAH SELESAI
+        // BLOKIR JIKA SUDAH PERNAH MENGERJAKAN
         if (sData.status === 'Selesai' || (sData.nilai !== undefined && sData.status !== 'Belum Ujian' && sData.mengerjakan === false && sData.waktuSelesai)) {
           return alert(`🚫 AKSES DITOLAK / DIBLOKIR!\n\nAnda (${sData.nama}) sudah pernah menyelesaikan ujian Mata Pelajaran ${cfg.mapel || ''} ini.\nSiswa hanya diperbolehkan mengerjakan 1 kali.`);
         }
@@ -547,7 +556,6 @@
       }
     }
 
-    // FUNGSI UTAMA SELESAI UJIAN: MENYIMPAN NILAI DAN STATUS 'SELESAI' PERMANEN KE DATABASE
     function selesaiUjian() {
       if (stateUjianSiswa.timerInterval) clearInterval(stateUjianSiswa.timerInterval);
 
@@ -566,7 +574,6 @@
 
       const nowStr = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
 
-      // SIMPAN DATA SELESAI, NILAI, DAN WAKTU DENGAN PERMANEN
       db.ref(`${pathGuru}/siswa/${keySiswa}`).update({
         status: 'Selesai',
         mengerjakan: false,
@@ -577,7 +584,7 @@
       stateUjianSiswa.isExamActive = false;
       exitFullscreenSafely();
 
-      alert(`Ujian Selesai!\n\nNilai Anda: ${nilaiAkhir}`);
+      alert(`Ujian Selesai! Nilai Anda: ${nilaiAkhir}`);
       document.getElementById('page-siswa').classList.add('hidden');
       document.getElementById('page-login').classList.remove('hidden');
     }
@@ -586,13 +593,11 @@
       document.getElementById('modal-confirm-logout').classList.remove('hidden');
     }
 
-    // FUNGSI LOGOUT / KELUAR: TIDAK MERUBAH DATABASE APABILA SISWA SUDAH MENGKLIK SELESAI
     function prosesKeluarSiswa(ya) {
       document.getElementById('modal-confirm-logout').classList.add('hidden');
       if(ya) {
         stateUjianSiswa.isExamActive = false;
         if (stateUjianSiswa.timerInterval) clearInterval(stateUjianSiswa.timerInterval);
-        
         exitFullscreenSafely();
         document.getElementById('page-siswa').classList.add('hidden');
         document.getElementById('page-login').classList.remove('hidden');
