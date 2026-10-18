@@ -47,12 +47,12 @@
       flex: 1 1 0%;
       min-width: 0;
       width: 100%;
-      text-align: left;
+      text-align: justify;
       word-break: break-word;
       font-size: 0.95rem;
       color: #f1f5f9;
       font-weight: 500;
-      line-height: 1.5;
+      line-height: 1.6;
     }
     @media (min-width: 768px) {
       .soal-wrapper { gap: 0.75rem; }
@@ -63,9 +63,9 @@
     .soal-content img {
       max-width: 100% !important;
       height: auto !important;
-      max-height: 300px !important;
+      max-height: 320px !important;
       border-radius: 0.5rem;
-      margin: 8px 0 !important;
+      margin: 10px auto !important;
       display: block !important;
       object-fit: contain;
     }
@@ -134,6 +134,7 @@
     </div>
   </div>
 
+  <!-- HALAMAN LOGIN SISWA -->
   <div id="page-login" class="min-h-screen flex items-center justify-center p-4 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-900 via-slate-950 to-black">
     <div class="dark-card p-5 sm:p-8 rounded-2xl shadow-2xl w-full max-w-md border border-slate-800/80">
       <div class="text-center mb-5 sm:mb-6">
@@ -171,8 +172,10 @@
     </div>
   </div>
 
+  <!-- HALAMAN UJIAN SISWA -->
   <div id="page-siswa" class="hidden min-h-screen h-screen flex flex-col bg-slate-950 overflow-hidden select-none">
     
+    <!-- HEADER NAVIGASI SISWA -->
     <div class="anbk-header text-white px-3 sm:px-6 py-2.5 shadow-lg flex justify-between items-center shrink-0 z-10">
       <div class="flex items-center gap-2 sm:gap-4 overflow-hidden">
         <div class="hidden sm:flex text-lg sm:text-xl font-black tracking-widest text-blue-400 items-center gap-2">
@@ -194,33 +197,56 @@
       </div>
     </div>
 
+    <!-- CONTAINER UTAMA -->
     <div class="flex-grow flex overflow-hidden relative">
       
       <div class="flex-1 flex flex-col overflow-y-auto bg-slate-950 p-3 sm:p-6 md:p-8">
         
         <div class="flex justify-between items-center border-b border-slate-800 pb-2.5 mb-3 sm:mb-6 shrink-0">
           <div class="flex items-center gap-2 sm:gap-3">
-            <span class="bg-blue-600 text-white font-black text-xs sm:text-sm px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-xl shadow-md shadow-blue-900/30">
-              SOAL NO. <span id="soal-nomor-display">1</span>
-            </span>
-            <span id="display-jenis-ujian" class="text-[11px] sm:text-xs font-extrabold text-blue-400 bg-blue-950/40 border border-blue-500/30 px-2 sm:px-3 py-1 rounded-xl">UH</span>
+            <span id="display-jenis-ujian" class="text-[11px] sm:text-xs font-extrabold text-blue-400 bg-blue-950/40 border border-blue-500/30 px-2.5 sm:px-3 py-1 rounded-xl">UH</span>
           </div>
 
           <button onclick="toggleSidebarMobile()" class="lg:hidden bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs px-3 py-1.5 rounded-xl flex items-center gap-1.5 shadow border border-slate-700">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path></svg>
-            <span>Nomor Soal</span>
+            <span>Daftar Soal</span>
           </button>
         </div>
 
-        <div class="flex-grow overflow-y-auto pr-1 space-y-4 sm:space-y-6">
-          <div class="soal-wrapper bg-slate-900/60 p-3.5 sm:p-5 rounded-2xl border border-slate-800 shadow-md">
-            <div id="display-soal-num-prefix" class="soal-number">1.</div>
-            <div id="display-teks-soal" class="soal-content"></div>
+        <!-- LAYOUT DUA KOLOM DENGAN TERPISAH YANG RAPI -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 flex-grow overflow-hidden my-2 min-h-0">
+          
+          <!-- KOLOM KIRI: NOMOR SOAL, TEKS WACANA & GAMBAR STIMULUS -->
+          <div class="overflow-y-auto pr-0 md:pr-3 border-b md:border-b-0 md:border-r border-slate-800 flex flex-col min-h-0 bg-slate-900/40 p-4 rounded-2xl border border-slate-800 space-y-3">
+            <div class="flex items-center justify-between border-b border-slate-800/80 pb-2">
+              <span class="bg-blue-600 text-white font-black text-xs sm:text-sm px-3 py-1 rounded-xl shadow-md shadow-blue-900/30">
+                SOAL NO. <span id="soal-nomor-display">1</span>
+              </span>
+              <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
+                <svg class="w-3.5 h-3.5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 01-2-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                Soal & Wacana
+              </span>
+            </div>
+
+            <div class="soal-wrapper">
+              <div id="display-soal-num-prefix" class="soal-number">1.</div>
+              <div id="display-teks-soal" class="soal-content"></div>
+            </div>
           </div>
 
-          <div class="space-y-2.5 sm:space-y-3" id="options-container"></div>
+          <!-- KOLOM KANAN: KHUSUS OPTION JAWABAN (A, B, C, D) -->
+          <div class="overflow-y-auto pl-0 md:pl-3 flex flex-col min-h-0 justify-start space-y-3">
+            <div class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1 flex items-center gap-1.5 px-1">
+              <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+              <span>Pilihan Jawaban:</span>
+            </div>
+
+            <div class="space-y-2.5 sm:space-y-3" id="options-container"></div>
+          </div>
+
         </div>
 
+        <!-- FOOTER NAVIGASI TOMBOL -->
         <div class="mt-4 sm:mt-6 border-t border-slate-800 pt-3 sm:pt-4 flex flex-wrap sm:flex-nowrap justify-between items-center gap-2 shrink-0">
           <button id="btn-prev" onclick="navSoal(-1)" class="flex-1 sm:flex-none bg-blue-600 hover:bg-blue-500 text-white font-bold px-3 sm:px-6 py-2.5 rounded-xl text-xs sm:text-sm shadow-md transition disabled:opacity-40">
             &laquo; SEBELUMNYA
@@ -242,6 +268,7 @@
 
       <div id="sidebar-overlay" onclick="toggleSidebarMobile()" class="hidden lg:hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-20 transition-opacity"></div>
 
+      <!-- SIDEBAR GRID NOMOR SOAL -->
       <div id="sidebar-nav" class="fixed lg:relative right-0 top-0 bottom-0 w-72 anbk-sidebar p-4 flex flex-col shrink-0 overflow-y-auto z-30 transform translate-x-full lg:translate-x-0 transition-transform duration-300 ease-in-out shadow-2xl lg:shadow-none">
         
         <div class="flex justify-between items-center border-b border-slate-800 pb-2 mb-3">
@@ -264,7 +291,6 @@
   </div>
 
   <script>
-    // Konfigurasi Firebase
     const firebaseConfig = {
       apiKey: "AIzaSyBxQCgLQlLPkueDp0lpuLarGwWWLIpEwnM",
       authDomain: "ujianonline-937d4.firebaseapp.com",
@@ -402,7 +428,6 @@
       selectNama.innerHTML = html;
     }
 
-    // LOGIC LOGIN & PENYARINGAN SOAL BERDASARKAN KELAS + MATERI
     function handleLoginSiswa(e) {
       e.preventDefault();
       const keySiswa = document.getElementById('siswa-nama').value;
@@ -446,7 +471,6 @@
         stateUjianSiswa.jawaban = sData.jawaban || {};
         stateUjianSiswa.ragu = sData.ragu || {};
 
-        // FITUR UTAMA: MENYARING SOAL BERDASARKAN TARGET KELAS DAN MATERI AKTIF
         const materiAktif = cfg.materiAktif || 'SEMUA';
         const kelasSiswaFull = String(sData.kelas || '').toUpperCase().trim();
         const kelasSiswaAngka = kelasSiswaFull.replace(/[^0-9]/g, '');
@@ -506,6 +530,7 @@
       });
     }
 
+    // FUNGSI RENDER TAMPILAN SOAL DUA KOLOM TERPISAH
     function renderSoalSiswa() {
       const idx = stateUjianSiswa.currentSoalIdx;
       const total = stateUjianSiswa.soalAktif.length;
@@ -521,19 +546,18 @@
         badgeJenis.innerText = `${jenisText}${materiText}`;
       }
 
-      let contentHtml = '';
-      if (s.teks) {
-        contentHtml += `<div>${s.teks}</div>`;
+      // 1. KOLOM KIRI: TEKS SOAL / WACANA & GAMBAR STIMULUS
+      let leftContent = s.teksLanjutan || s.teks || '';
+      if (s.teks && s.teksLanjutan && s.teks !== s.teksLanjutan) {
+        leftContent = `<div class="mb-2 text-slate-300 font-normal">${s.teks}</div><div>${s.teksLanjutan}</div>`;
       }
+
       if (s.imgSoal) {
-        contentHtml += `<img src="${s.imgSoal}" class="max-w-full h-auto rounded-xl border border-slate-800 my-2" />`;
+        leftContent += `<br><img src="${s.imgSoal}" class="max-w-full h-auto rounded-xl border border-slate-800 my-2" />`;
       }
-      if (s.teksLanjutan) {
-        contentHtml += `<div class="mt-2 font-semibold text-slate-100">${s.teksLanjutan}</div>`;
-      }
+      document.getElementById('display-teks-soal').innerHTML = leftContent || '<p class="text-slate-500 italic">Tidak ada teks soal/wacana pada nomor ini.</p>';
 
-      document.getElementById('display-teks-soal').innerHTML = contentHtml || '<p class="text-slate-500 italic">Pertanyaan soal belum diisi.</p>';
-
+      // 2. KOLOM KANAN: KHUSUS OPTION PILIHAN JAWABAN (A, B, C, D)
       const optContainer = document.getElementById('options-container');
       optContainer.innerHTML = '';
 
