@@ -302,7 +302,6 @@
       else if (document.webkitExitFullscreen) document.webkitExitFullscreen().catch(() => {});
     }
 
-    // Mencegah Tombol Keluar / Refresh saat Ujian
     window.addEventListener('keydown', function(e) {
       if (!stateUjianSiswa.isExamActive) return;
       if (e.key === 'Escape' || e.key === 'F11' || (e.altKey && e.key === 'Tab') || (e.ctrlKey && (e.key === 'w' || e.key === 'r'))) {
@@ -315,7 +314,6 @@
       if (stateUjianSiswa.isExamActive) e.preventDefault();
     });
 
-    // MEMUAT KELAS & SISWA SECARA OTOMATIS BERDASARKAN RUANG GURU YANG AKTIF
     function muatDaftarSiswaOtomatis() {
       const selectKelas = document.getElementById('siswa-kelas');
       const selectNama = document.getElementById('siswa-nama');
@@ -361,7 +359,6 @@
       });
     }
 
-    // UPDATE DROPDOWN NAMA SISWA BERDASARKAN KELAS YANG DIPILIH
     function updateSiswaDropdown() {
       const selectedKelas = document.getElementById('siswa-kelas').value;
       const selectNama = document.getElementById('siswa-nama');
@@ -380,7 +377,7 @@
       selectNama.innerHTML = html;
     }
 
-    // LOGIC LOGIN & OTOMATIS TERHUBUNG MAPEL GURU
+    // LOGIC LOGIN & PENYARINGAN SOAL BERDASARKAN KELAS + MATERI
     function handleLoginSiswa(e) {
       e.preventDefault();
       const keySiswa = document.getElementById('siswa-nama').value;
@@ -409,7 +406,6 @@
 
         if (!sData) return alert("Data siswa tidak ditemukan di ruang ujian guru!");
 
-        // BLOKIR JIKA SUDAH PERNAH MENGERJAKAN
         if (sData.status === 'Selesai' || (sData.nilai !== undefined && sData.status !== 'Belum Ujian' && sData.mengerjakan === false && sData.waktuSelesai)) {
           return alert(`🚫 AKSES DITOLAK / DIBLOKIR!\n\nAnda (${sData.nama}) sudah pernah menyelesaikan ujian Mata Pelajaran ${cfg.mapel || ''} ini.\nSiswa hanya diperbolehkan mengerjakan 1 kali.`);
         }
@@ -425,21 +421,32 @@
         stateUjianSiswa.jawaban = sData.jawaban || {};
         stateUjianSiswa.ragu = sData.ragu || {};
 
+        // FITUR UTAMA: MENYARING SOAL BERDASARKAN TARGET KELAS DAN MATERI AKTIF
+        const materiAktif = cfg.materiAktif || 'SEMUA';
+        const kelasSiswaFull = String(sData.kelas || '').toUpperCase().trim();
+        const kelasSiswaAngka = kelasSiswaFull.replace(/[^0-9]/g, '');
+
         stateUjianSiswa.soalAktif = targetSoal.filter(s => {
-          const k = String(s.kelas || 'SEMUA').toUpperCase();
-          const sLevel = String(sData.kelas || '').replace(/[^0-9]/g, '');
-          return k === 'SEMUA' || k === sData.kelas || k === sLevel;
+          const kSoal = String(s.kelas || 'SEMUA').toUpperCase().trim();
+          const mSoal = String(s.materi || 'Umum').toLowerCase().trim();
+
+          const matchKelas = (kSoal === 'SEMUA' || kSoal === kelasSiswaFull || kSoal === kelasSiswaAngka);
+          const matchMateri = (materiAktif === 'SEMUA' || mSoal === materiAktif.toLowerCase().trim());
+
+          return matchKelas && matchMateri;
         });
 
         if (stateUjianSiswa.soalAktif.length === 0) {
-          return alert(`Belum ada soal ujian Mata Pelajaran ${cfg.mapel} yang tersedia untuk kelas Anda.`);
+          const infoMateri = materiAktif !== 'SEMUA' ? ` dengan Materi/Topik "${materiAktif}"` : '';
+          return alert(`Belum ada soal ujian Mata Pelajaran ${cfg.mapel}${infoMateri} yang tersedia untuk kelas Anda (${sData.kelas}).`);
         }
 
         document.getElementById('page-login').classList.add('hidden');
         document.getElementById('page-siswa').classList.remove('hidden');
 
         document.getElementById('view-siswa-nama').innerText = sData.nama;
-        document.getElementById('view-siswa-info').innerText = `${cfg.jenis || 'UH'} | Mapel: ${cfg.mapel || '-'} | Semester: ${cfg.semester || 'Ganjil'}`;
+        const displayMateriStr = materiAktif !== 'SEMUA' ? ` | Materi: ${materiAktif}` : '';
+        document.getElementById('view-siswa-info').innerText = `${cfg.jenis || 'UH'} | Mapel: ${cfg.mapel || '-'}${displayMateriStr} | Semester: ${cfg.semester || 'Ganjil'}`;
 
         launchFullscreen(document.documentElement);
         stateUjianSiswa.isExamActive = true;
@@ -481,6 +488,13 @@
 
       document.getElementById('soal-nomor-display').innerText = idx + 1;
       document.getElementById('display-soal-num-prefix').innerText = `${idx + 1}.`;
+
+      const badgeJenis = document.getElementById('display-jenis-ujian');
+      if (badgeJenis && s) {
+        const jenisText = s.jenis || 'UH';
+        const materiText = s.materi ? ` | Materi: ${s.materi}` : '';
+        badgeJenis.innerText = `${jenisText}${materiText}`;
+      }
 
       let contentHtml = '';
       if (s.teks) {
@@ -582,7 +596,6 @@
       stateUjianSiswa.currentSoalIdx = idx;
       renderSoalSiswa();
       
-      // Otomatis menutup sidebar di layar HP setelah pilih nomor
       if (window.innerWidth < 1024) {
         const sidebar = document.getElementById('sidebar-nav');
         const overlay = document.getElementById('sidebar-overlay');
